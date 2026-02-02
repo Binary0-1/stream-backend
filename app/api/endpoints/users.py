@@ -21,7 +21,7 @@ def create_user(
             status_code=400,
             detail="The user with this username already exists in the system.",
         )
-    
+    print(user_in.password)
     db_obj = User(
         email=user_in.email,
         hashed_password=security.get_password_hash(user_in.password),
