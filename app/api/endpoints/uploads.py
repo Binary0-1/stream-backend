@@ -10,7 +10,6 @@ from app.core.config import settings
 
 router = APIRouter()
 
-# Initialize S3 client - In a real app, these would come from settings
 s3_client = boto3.client(
     "s3",
     aws_access_key_id=settings.AWS_ACCESS_KEY_ID,

@@ -38,3 +38,8 @@ alembic upgrade head
 
 ### Important Note
 Ensure any new model is imported in `app/models/__init__.py` so that Alembic can detect it for autogeneration.
+
+
+### DEV 
+
+To run in dev mode use the command "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"

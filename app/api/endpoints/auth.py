@@ -12,11 +12,13 @@ from app.core.config import settings
 from app.models.user import User
 from app.models.refresh_token import RefreshToken
 from app.schemas.token import Token, TokenPayload
+from app.schemas.user import User as UserSchema, UserCreate
+
 
 router = APIRouter()
 
-@router.post("/login/access-token", response_model=Token)
-def login_access_token(
+@router.post("/auth/access-token", response_model=Token)
+def access_token(
     db: Session = Depends(deps.get_db), form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
     """
@@ -38,7 +40,6 @@ def login_access_token(
         user.id, expires_delta=refresh_token_expires
     )
 
-    # Store refresh token in DB
     db_refresh_token = RefreshToken(
         token=refresh_token_str,
         user_id=user.id,
@@ -53,7 +54,7 @@ def login_access_token(
         "token_type": "bearer",
     }
 
-@router.post("/login/refresh-token", response_model=Token)
+@router.post("/auth/refresh-token", response_model=Token)
 def refresh_token(
     db: Session = Depends(deps.get_db),
     refresh_token: str = Body(...),
@@ -85,7 +86,6 @@ def refresh_token(
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
 
-    # Optional: Revoke old refresh token on use (Rotation)
     db_refresh_token.is_revoked = True
     db.add(db_refresh_token)
 
@@ -113,3 +113,28 @@ def refresh_token(
         "refresh_token": new_refresh_token_str,
         "token_type": "bearer",
     }
+
+
+@router.post("/auth/register", response_model=UserSchema)
+def create_user(
+    *,
+    db: Session = Depends(deps.get_db),
+    user_in: UserCreate
+) -> Any:
+    user = db.query(User).filter(User.email == user_in.email).first()
+    if user:
+        raise HTTPException(
+            status_code=400,
+            detail="The user with this username already exists in the system.",
+        )
+    print(user_in.password)
+    db_obj = User(
+        email=user_in.email,
+        hashed_password=security.get_password_hash(user_in.password),
+        full_name=user_in.full_name,
+        is_superuser=user_in.is_superuser,
+    )
+    db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return db_obj
